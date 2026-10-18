@@ -76,3 +76,18 @@ def load_stores():
             stores.append({"ip": ip, "user": user, "pwd": pwd,
                            "dc": current_dc, "name": name, "code": code, "pos": pos})
     return stores, warnings
+
+def read_stores_raw():
+    """Raw text of stores.txt for the editor (the file is created first if missing)."""
+    ensure_stores_file()
+    try:
+        with open(STORES_FILE, "r", encoding="utf-8") as f:
+            return f.read()
+    except OSError:
+        return ""
+
+
+def write_stores_raw(content):
+    """Overwrite stores.txt with the text from the editor."""
+    with open(STORES_FILE, "w", encoding="utf-8") as f:
+        f.write(content.rstrip("\n") + "\n")

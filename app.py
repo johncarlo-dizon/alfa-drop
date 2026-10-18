@@ -4,7 +4,7 @@ import time
 import tkinter as tk
 from datetime import datetime
 from tkinter import filedialog, messagebox, ttk
-
+from editor import open_stores_editor
 import theme as T
 from config import (
     APP_NAME, APP_SUBTITLE, DEFAULT_REMOTE_DIR, DEFAULT_WORKERS, LOG_FILE, LOG_MAX_BYTES,
@@ -74,6 +74,7 @@ class AlfaDropApp:
         self.step_text = ""
         self.failed_keys = []
         self._filter_job = None
+        self._editor = None
 
         self.replace_var = tk.BooleanVar(value=True)
         self.force_var = tk.BooleanVar(value=False)
@@ -132,6 +133,9 @@ class AlfaDropApp:
                                        "A deployment is still running. Stop it and close AlfaDrop?"):
                 return
             self.cancel_event.set()
+        if self._editor is not None and self._editor.winfo_exists():
+            if not self._editor.request_close():
+                return
         self.root.destroy()
 
     # ---------------------------------------------------------- building
@@ -271,7 +275,7 @@ class AlfaDropApp:
         btns.pack(fill="x", pady=(8, 6))
         for text, cmd in (("Select shown", self.select_shown), ("Clear", self.clear_selection),
                           ("Select failed", self.select_failed), ("Reload", self.reload_stores),
-                          ("Edit stores.txt", self.edit_stores)):
+                         ("Edit stores", self.edit_stores)):
             ttk.Button(btns, text=text, style="Small.TButton", command=cmd).pack(
                 side="left", padx=(0, 6))
 
@@ -408,7 +412,7 @@ class AlfaDropApp:
 
         if not groups:
             msg = ("No store matches your search" if query
-                   else "No stores yet — click “Edit stores.txt”, save, then “Reload”")
+                   else "No stores yet — click “Edit stores” to add some")
             self.tree.insert("", "end", iid="empty", text="   " + msg, tags=("empty",))
         for k, dc in enumerate(sorted(groups)):
             gid = f"g{k}"
@@ -518,11 +522,11 @@ class AlfaDropApp:
             self._log(f"⚠ {w}", "cancelled")
 
     def edit_stores(self):
-        try:
-            os.startfile(STORES_FILE)
-            self._log("Edit and save stores.txt, then click “Reload”.", "muted")
-        except (AttributeError, OSError):
-            messagebox.showinfo("stores.txt", f"Open this file in a text editor:\n\n{STORES_FILE}")
+        if self._editor is not None and self._editor.winfo_exists():
+            self._editor.lift()
+            self._editor.focus_force()
+            return
+        self._editor = open_stores_editor(self.root, on_save=self.reload_stores)
 
     def open_log_file(self):
         if not os.path.exists(LOG_FILE):
