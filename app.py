@@ -188,12 +188,18 @@ class AlfaDropApp:
 
         btns = ttk.Frame(body, style="Card.TFrame")
         btns.pack(fill="x", pady=(0, 8))
-        ttk.Button(btns, text="＋  Add files", style="Accent.TButton",
-                   command=self.choose_files).pack(side="left")
-        ttk.Button(btns, text="Remove selected", style="Ghost.TButton",
-                   command=self.remove_selected).pack(side="left", padx=(8, 0))
-        ttk.Button(btns, text="Clear", style="Ghost.TButton",
-                   command=self.clear_files).pack(side="left", padx=(8, 0))
+        add_btn = ttk.Button(btns, text="Add Files", style="Accent.TButton",
+                             command=self.choose_files)
+        add_btn.pack(side="left")
+        remove_btn = ttk.Button(btns, text="Remove", style="Ghost.TButton",
+                                command=self.remove_selected)
+        remove_btn.pack(side="left", padx=(8, 0))
+        clear_btn = ttk.Button(btns, text="Clear All", style="Ghost.TButton",
+                               command=self.clear_files)
+        clear_btn.pack(side="left", padx=(8, 0))
+        T.add_tooltip(add_btn, "Choose one or more files from this computer")
+        T.add_tooltip(remove_btn, "Remove the highlighted files from the list")
+        T.add_tooltip(clear_btn, "Remove every file from the list")
 
         box = tk.Frame(body, bg=T.BORDER)
         box.pack(fill="both", expand=True)
@@ -207,7 +213,7 @@ class AlfaDropApp:
         self.files_listbox.configure(yscrollcommand=sb.set)
         self.files_listbox.pack(side="left", fill="both", expand=True, padx=(8, 0), pady=4)
         sb.pack(side="right", fill="y")
-        self.files_empty = tk.Label(box_in, text="No files yet — click “Add files”",
+        self.files_empty = tk.Label(box_in, text="No files yet — click “Add Files”",
                                     bg=T.FIELD, fg=T.MUTED, font=T.FONT)
         self.files_info = ttk.Label(body, text="", style="Hint.TLabel")
         self.files_info.pack(anchor="w", pady=(6, 0))
@@ -252,12 +258,14 @@ class AlfaDropApp:
                            textvariable=self.workers_var)
         spin.pack(side="left", padx=(6, 16))
         spin.bind("<FocusOut>", lambda _e: self.workers_var.set(str(self._workers_value())))
-        self.deploy_btn = ttk.Button(controls, text="🚀  Deploy", style="Success.TButton",
-                                     width=13, command=self.deploy)
+        self.deploy_btn = ttk.Button(controls, text="Deploy", style="Success.TButton",
+                                     width=12, command=self.deploy)
         self.deploy_btn.pack(side="left")
-        self.cancel_btn = ttk.Button(controls, text="Cancel", style="Danger.TButton",
+        self.cancel_btn = ttk.Button(controls, text="Stop", style="Danger.TButton",
                                      width=9, command=self.cancel_deploy, state="disabled")
         self.cancel_btn.pack(side="left", padx=(8, 0))
+        T.add_tooltip(self.deploy_btn, "Send the files to the ticked store PCs")
+        T.add_tooltip(self.cancel_btn, "Stop the deployment that is running")
 
     def _build_stores(self, parent):
         outer, body, _h = self._card(parent, "3  ·  Store PCs")
@@ -273,11 +281,15 @@ class AlfaDropApp:
 
         btns = ttk.Frame(body, style="Card.TFrame")
         btns.pack(fill="x", pady=(8, 6))
-        for text, cmd in (("Select shown", self.select_shown), ("Clear", self.clear_selection),
-                          ("Select failed", self.select_failed), ("Reload", self.reload_stores),
-                         ("Edit stores", self.edit_stores)):
-            ttk.Button(btns, text=text, style="Small.TButton", command=cmd).pack(
-                side="left", padx=(0, 6))
+        for text, cmd, tip in (
+                ("Select All", self.select_shown, "Tick every store currently shown in the list"),
+                ("Deselect All", self.clear_selection, "Untick all stores"),
+                ("Select Failed", self.select_failed, "Tick the stores that failed in the last run"),
+                ("Refresh", self.reload_stores, "Read stores.txt again"),
+                ("Edit List", self.edit_stores, "Add or change store PCs")):
+            b = ttk.Button(btns, text=text, style="Small.TButton", command=cmd)
+            b.pack(side="left", padx=(0, 6))
+            T.add_tooltip(b, tip)
 
         box = tk.Frame(body, bg=T.BORDER)
         box.pack(fill="both", expand=True)
@@ -301,8 +313,10 @@ class AlfaDropApp:
         outer, body, header = self._card(parent, "Activity log")
         outer.grid(row=1, column=0, sticky="nsew")
         parent.grid_rowconfigure(1, weight=2, minsize=110)
-        ttk.Button(header, text="Open log file", style="Small.TButton",
-                   command=self.open_log_file).pack(side="right")
+        log_btn = ttk.Button(header, text="Open Log", style="Small.TButton",
+                             command=self.open_log_file)
+        log_btn.pack(side="right")
+        T.add_tooltip(log_btn, "Open the full log file")
 
         box = tk.Frame(body, bg=T.BORDER)
         box.pack(fill="both", expand=True)
@@ -571,8 +585,8 @@ class AlfaDropApp:
     # ------------------------------------------------------------ deploy
     def _set_running(self, running):
         self.deploy_btn.config(state="disabled" if running else "normal",
-                               text="⏳  Deploying…" if running else "🚀  Deploy")
-        self.cancel_btn.config(state="normal" if running else "disabled", text="Cancel")
+                               text="Deploying…" if running else "Deploy")
+        self.cancel_btn.config(state="normal" if running else "disabled", text="Stop")
 
     def deploy(self):
         if self.cancel_event is not None:
@@ -603,7 +617,7 @@ class AlfaDropApp:
             lines.append("Same-size files: " + ("re-uploaded (Force is on)" if force
                                                 else "skipped as up to date"))
         lines += ["", "Proceed?"]
-        if not messagebox.askyesno("Confirm deploy", "\n".join(lines)):
+        if not messagebox.askyesno("Confirm Deployment", "\n".join(lines)):
             return
 
         files = [dict(f) for f in self.files]
@@ -641,14 +655,14 @@ class AlfaDropApp:
         if self.cancel_event is None or self.cancel_event.is_set():
             return
         if not messagebox.askyesno(
-                "Cancel deploy",
+                "Stop Deployment?",
                 "PCs already in progress will finish their current file; PCs that haven't "
-                "started will be skipped.\n\nCancel the deployment?"):
+                "started will be skipped.\n\nStop the deployment?"):
             return
         self.cancel_event.set()
         self.cancelling = True
-        self.cancel_btn.config(state="disabled", text="Cancelling…")
-        self._log("--- CANCEL REQUESTED ---", "failed")
+        self.cancel_btn.config(state="disabled", text="Stopping…")
+        self._log("--- STOP REQUESTED ---", "failed")
 
     def _poll(self):
         entries, progress_add, finished, more = [], 0, False, True
@@ -711,7 +725,7 @@ class AlfaDropApp:
         self.failed_keys = [(r["ip"], r["code"], r["pos"]) for r in failed]
 
         lines = [("", None), (RULE, None),
-                 (f"RUN {'CANCELLED' if cancelled else 'FINISHED'} in {fmt_elapsed(elapsed)}", "heading"),
+                 (f"RUN {'STOPPED' if cancelled else 'FINISHED'} in {fmt_elapsed(elapsed)}", "heading"),
                  (self._counts_text(), None)]
         if failed:
             by_reason = {}
@@ -723,7 +737,7 @@ class AlfaDropApp:
                 lines.extend((f"      {n}", None) for n in names[:10])
                 if len(names) > 10:
                     lines.append((f"      … and {len(names) - 10} more", None))
-            lines.append(("Click “Select failed” to tick these stores, then Deploy again.", None))
+                lines.append(("Click “Select Failed” to tick these stores, then Deploy again.", None))
         lines.append((RULE, None))
         self._log_many(lines)
 
@@ -731,8 +745,8 @@ class AlfaDropApp:
         self.cancel_event = None
         self.cancelling = False
         self._set_running(False)
-        self.summary_label.config(text="Cancelled" if cancelled else "Finished")
+        self.summary_label.config(text="Stopped" if cancelled else "Finished")
         self.status_label.config(text=counts_text)
-        title = "Deploy cancelled" if cancelled else "Deploy finished"
+        title = "Deployment stopped" if cancelled else "Deployment finished"
         msg = f"{counts_text}\n\nSee the Activity log for the reason behind each failure."
         (messagebox.showwarning if failed else messagebox.showinfo)(title, msg)

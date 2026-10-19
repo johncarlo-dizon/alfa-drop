@@ -92,3 +92,56 @@ def apply_style(root):
         s.configure(f"{orient}.TScrollbar", background="#c9cde0", troughcolor=BG,
                     bordercolor=BG, arrowcolor=MUTED, relief="flat", borderwidth=0, gripcount=0)
         s.map(f"{orient}.TScrollbar", background=[("active", ACCENT), ("pressed", ACCENT)])
+
+
+
+
+def add_tooltip(widget, text, delay_ms=500):
+    """Small hover tip shown under a widget after a short pause."""
+    state = {"job": None, "tip": None}
+
+    def hide(_event=None):
+        if state["job"] is not None:
+            try:
+                widget.after_cancel(state["job"])
+            except tk.TclError:
+                pass
+            state["job"] = None
+        if state["tip"] is not None:
+            try:
+                state["tip"].destroy()
+            except tk.TclError:
+                pass
+            state["tip"] = None
+
+    def show():
+        state["job"] = None
+        if state["tip"] is not None:
+            return
+        tip = tk.Toplevel(widget)
+        tip.wm_overrideredirect(True)
+        try:
+            tip.wm_attributes("-topmost", True)
+        except tk.TclError:
+            pass
+        tk.Label(tip, text=text, bg=TEXT, fg="white", font=FONT_SMALL,
+                 padx=8, pady=4).pack()
+        tip.update_idletasks()
+        sw, sh = widget.winfo_screenwidth(), widget.winfo_screenheight()
+        x = widget.winfo_rootx() + 8
+        y = widget.winfo_rooty() + widget.winfo_height() + 6
+        if y + tip.winfo_reqheight() > sh - 48:          # no room below: show above
+            y = widget.winfo_rooty() - tip.winfo_reqheight() - 6
+        x = max(0, min(x, sw - tip.winfo_reqwidth() - 8))
+        tip.wm_geometry(f"+{x}+{y}")
+        state["tip"] = tip
+
+    def schedule(_event=None):
+        hide()
+        state["job"] = widget.after(delay_ms, show)
+
+    widget.bind("<Enter>", schedule, add="+")
+    widget.bind("<Leave>", hide, add="+")
+    widget.bind("<ButtonPress>", hide, add="+")
+    widget.bind("<Destroy>", hide, add="+")
+    return widget

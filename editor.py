@@ -105,8 +105,9 @@ def open_stores_editor(parent, on_save=None):
 
     ttk.Button(bar, text="Close", style="Ghost.TButton",
                command=request_close).pack(side="right", padx=(8, 0))
-    save_btn = ttk.Button(bar, text="💾  Save", style="Success.TButton", command=save)
+    save_btn = ttk.Button(bar, text="Save", style="Success.TButton", command=save)
     save_btn.pack(side="right")
+    T.add_tooltip(save_btn, "Save and reload the store list (Ctrl+S)")
 
     def on_modified(_event=None):
         if text.edit_modified():

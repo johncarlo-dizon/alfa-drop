@@ -13,7 +13,7 @@ from config import (
 )
 
 ICON = {"ok": "✓", "failed": "✗", "cancelled": "–"}
-LABEL = {"ok": "OK", "failed": "Failed", "cancelled": "Cancelled"}
+LABEL = {"ok": "OK", "failed": "Failed", "cancelled": "Stopped"}
 
 _hosts_lock = threading.Lock()
 
