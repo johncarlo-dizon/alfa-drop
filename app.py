@@ -317,6 +317,10 @@ class AlfaDropApp:
                              command=self.open_log_file)
         log_btn.pack(side="right")
         T.add_tooltip(log_btn, "Open the full log file")
+        copy_btn = ttk.Button(header, text="Copy Failed", style="Small.TButton",
+                              command=self.copy_failed)
+        copy_btn.pack(side="right", padx=(0, 6))
+        T.add_tooltip(copy_btn, "Copy the IPs of the stores that failed in the last run")
 
         box = tk.Frame(body, bg=T.BORDER)
         box.pack(fill="both", expand=True)
@@ -525,6 +529,20 @@ class AlfaDropApp:
         n = self._select_by_keys(self.failed_keys)
         self._log(f"Ticked {n} store(s) that failed in the last run.", "muted")
 
+    def copy_failed(self):
+        if not self.failed_keys:
+            messagebox.showinfo("No failed stores",
+                                "There are no failed stores from the last run in this session.")
+            return
+        ordered = sorted(self.failed_keys, key=lambda k: (k[1], k[0]))   # by store code, then IP
+        ips = list(dict.fromkeys(ip for ip, _code, _pos in ordered))     # no duplicates
+        self.root.clipboard_clear()
+        self.root.clipboard_append("\n".join(ips))
+        self.root.update()                                               # keeps it after the app closes
+        self._log(f"Copied {len(ips)} failed IP address(es) to the clipboard.", "muted")
+        messagebox.showinfo("Copied", f"Copied {len(ips)} IP address(es) to the clipboard,\n"
+                                      f"one per line.")
+        
     def reload_stores(self):
         keys = [store_key(self.stores[i]) for i in self.selected if i < len(self.stores)]
         self.stores, self.store_warnings = load_stores()
